@@ -1,9 +1,7 @@
 import datetime
 
-from click import DateTime
-
 from . import Base
-from sqlalchemy import Column, Integer, String
+from sqlalchemy import Column, Integer, String, DateTime
 
 
 class LocationData(Base):

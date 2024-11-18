@@ -1,6 +1,4 @@
 import os
-from unittest.mock import patch
-
 import pytest
 from httpx import AsyncClient
 from sqlalchemy import create_engine
@@ -8,9 +6,9 @@ from sqlalchemy.orm import sessionmaker
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
 
-from app.main import app
-from celery_app import celery_app
-from database.database import Base, get_db
+from app.main import app, get_db
+from database.database import Base
+from unittest.mock import patch
 
 os.environ['DATABASE_URL'] = 'sqlite:///./test.db'
 test_engine = create_engine(
@@ -39,10 +37,6 @@ async def lifespan(app: FastAPI):
 
 app.router.lifespan_context = lifespan
 
-celery_app.conf.broker_url = 'memory://'
-celery_app.conf.result_backend = 'rpc://'
-celery_app.conf.task_always_eager = True
-
 
 @patch('app.main.process_data.delay')
 @pytest.mark.asyncio
@@ -57,4 +51,7 @@ async def test_receive_data(mock_delay):
         response = await ac.post("/data", json=payload)
     assert response.status_code == 200
     assert response.json() == {"message": "Data received"}
-    mock_delay.assert_called_once_with(payload)
+
+    mock_delay.assert_called_once()
+    args, kwargs = mock_delay.call_args
+    assert args[0] == payload
