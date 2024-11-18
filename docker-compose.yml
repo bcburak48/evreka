@@ -1,0 +1,45 @@
+services:
+  web:
+    build: .
+    command: uvicorn app.main:app --host 0.0.0.0 --port 80
+    ports:
+      - "80:80"
+    depends_on:
+      - db
+      - rabbitmq
+
+  tcp_server:
+    build: .
+    command: python tcp_server/server.py
+    depends_on:
+      - rabbitmq
+
+  celery_worker:
+    build: .
+    command: celery -A celery_app worker --loglevel=info
+    depends_on:
+      - db
+      - rabbitmq
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+    ports:
+      - "15672:15672"
+      - "5672:5672"
+
+  db:
+    image: postgres:13
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: location_db
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+
+volumes:
+  postgres_data:
